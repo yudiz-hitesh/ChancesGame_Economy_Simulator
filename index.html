@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chances Game Economy Simulator</title>
+
+  <!-- Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1, h2 {
+      margin-top: 0;
+      color: #facc15;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #020617;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border: 1px solid #1e293b;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+    }
+    .button-row {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #020617;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #e5e7eb;
+      border: 1px solid #475569;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #e5e7eb;
+      border: 1px solid #38bdf8;
+    }
+    .small-text {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #1f2937;
+      padding: 6px 8px;
+      text-align: right;
+    }
+    th {
+      background: #020617;
+      color: #e5e7eb;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    td:first-child, th:first-child {
+      text-align: left;
+    }
+    .status {
+      font-size: 13px;
+      margin-top: 6px;
+      color: #a5f3fc;
+    }
+    .error {
+      color: #f97373;
+    }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid #38bdf8;
+      border-top-color: transparent;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: #020617;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 10px;
+    }
+    canvas {
+      background: #020617;
+      border-radius: 12px;
+      padding: 8px;
+    }
+    select {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+    .game-link-btn {
+      background: transparent;
+      border-radius: 999px;
+      border: 1px solid #475569;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      color: #e5e7eb;
+    }
+    .game-link-btn:hover {
+      border-color: #38bdf8;
+    }
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .board-cell {
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+      font-size: 10px;
+      text-align: center;
+      padding: 4px 0;
+      background: #020617;
+      color: #6b7280;
+    }
+    .board-cell.hit {
+      background: #166534;
+      color: #f9fafb;
+      font-weight: 600;
+    }
+    .board-cell.hit span {
+      display: block;
+      font-size: 9px;
+      color: #bbf7d0;
+    }
+    .game-visual-header {
+      margin-top: 8px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #e5e7eb;
+    }
+    .timeline {
+      margin-top: 8px;
+      max-height: 160px;
+      overflow: auto;
+      border-top: 1px solid #1e293b;
+      padding-top: 6px;
+    }
+    .timeline-item {
+      font-size: 12px;
+      margin-bottom: 2px;
+      color: #cbd5f5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Chances Game Economy Simulator</h1>
+    <p class="small-text">
+      Test your <strong>Chances Game multiplayer economy</strong> by changing configuration values
+      and running simulated batches of games.
+    </p>
+
+    <!-- CONFIG CARD -->
+    <div class="card">
+      <h2>Configuration</h2>
+      <div class="grid">
+        <div>
+          <label>Entry Fee per Player</label>
+          <input id="entryFee" type="number" value="200" min="1" step="1" />
+        </div>
+        <div>
+          <label>Players per Game (N)</label>
+          <input id="numPlayers" type="number" value="2" min="2" max="4" step="1" />
+        </div>
+        <div>
+          <label>Reward Share to Players (%)</label>
+          <input id="rewardShare" type="number" value="50" min="1" max="90" step="1" />
+          <span class="small-text">Admin share = 100% − this value</span>
+        </div>
+        <div>
+          <label>Game Counts (comma separated)</label>
+          <input id="gameCounts" type="text" value="100,500,1000,5000" />
+          <span class="small-text">Each value = one batch (row in summary)</span>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="runBtn">
+          ▶ Run Simulation
+        </button>
+        <button id="resetBtn" class="btn-secondary" type="button">
+          Reset Defaults
+        </button>
+        <button id="exportBtn" class="btn-outline" type="button" disabled>
+          ⬇ Export Summary CSV
+        </button>
+        <span id="status" class="status"></span>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARD -->
+    <div class="card">
+      <h2>Summary Results</h2>
+      <p class="small-text">
+        One row per batch (e.g. 100 / 500 / 1000 / 5000 games).  
+        Net values are combined over all players for that batch.
+      </p>
+      <div id="resultsContainer">
+        <p class="small-text">
+          No results yet. Configure and click <strong>Run Simulation</strong>.
+        </p>
+      </div>
+    </div>
+
+    <!-- PER-GAME DETAIL CARD -->
+    <div class="card">
+      <h2>Per-Game Detail</h2>
+      <p class="small-text">
+        Select a batch and click a <strong>Game #</strong> to see how that game played out on the board (with per-player rewards).
+      </p>
+      <div class="button-row" style="margin-top: 0;">
+        <label for="batchSelect" class="small-text">Select Batch:</label>
+        <select id="batchSelect">
+          <option value="">No data yet</option>
+        </select>
+      </div>
+      <div id="detailContainer" style="margin-top:10px;">
+        <p class="small-text">Run a simulation to view per-game details.</p>
+      </div>
+    </div>
+
+    <!-- CHARTS CARD -->
+    <div class="card">
+      <h2>Charts</h2>
+      <p class="small-text">
+        Visual view of average profit per game and balance growth across batches.
+      </p>
+      <div class="charts-grid">
+        <div>
+          <canvas id="avgProfitChart" height="200"></canvas>
+        </div>
+        <div>
+          <canvas id="balanceChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES CARD -->
+    <div class="card">
+      <h2>Algorithm Notes</h2>
+      <p class="small-text">
+        100-box board with weights &amp; approximate hit probabilities per zone:
+      </p>
+      <ul class="small-text">
+        <li>Boxes 1–20: weight 1, hitProb ~0.7</li>
+        <li>Boxes 21–60: weight 2, hitProb ~0.5</li>
+        <li>Boxes 61–90: weight 3, hitProb ~0.3</li>
+        <li>Boxes 91–99: weight 4, hitProb ~0.15</li>
+        <li>Box 100: weight 8, hitProb ~0.05</li>
+      </ul>
+      <p class="small-text">
+        Per-game reward budget = <code>totalEntry * rewardShare</code>.<br/>
+        Box rewards are computed from
+        <code>baseUnit = payoutBudget / Σ weight</code> and
+        <code>boxReward[i] = baseUnit * weight[i] / hitProb[i]</code>,<br/>
+        rounded, with consumable rewards and a global scaling factor from <code>poolBalance</code>.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // ---------- RNG ----------
+    function createRNG() {
+      return { random: () => Math.random() };
+    }
+
+    // ---------- SIMULATION ENGINE ----------
+    // returns { summaries: [...], batches: [...] }
+    function runSimulation(config) {
+      const ENTRY_FEE   = config.entryFee;
+      const N_PLAYERS   = config.numPlayers;
+      const rewardShare = config.rewardShare;
+      const adminShare  = 1 - rewardShare;
+      const minReward   = 1;
+      const safetyFactor = 1.5;
+      const gameCounts  = config.gameCounts;
+      const rng         = createRNG();
+
+      // weights + hit probs
+      const weights = new Array(101).fill(0);
+      const hitProb = new Array(101).fill(0);
+      for (let i = 1; i <= 100; i++) {
+        if (i >= 1 && i <= 20) {
+          weights[i] = 1;
+          hitProb[i] = 0.7;
+        } else if (i >= 21 && i <= 60) {
+          weights[i] = 2;
+          hitProb[i] = 0.5;
+        } else if (i >= 61 && i <= 90) {
+          weights[i] = 3;
+          hitProb[i] = 0.3;
+        } else if (i >= 91 && i <= 99) {
+          weights[i] = 4;
+          hitProb[i] = 0.15;
+        } else if (i === 100) {
+          weights[i] = 8;
+          hitProb[i] = 0.05;
+        }
+      }
+      const totalWeight = weights.slice(1).reduce((a, b) => a + b, 0);
+
+      function simulateBatch(numGames, poolStart, houseStart) {
+        let poolBalance  = poolStart;
+        let houseBalance = houseStart;
+
+        let totalAdminNet  = 0;
+        let totalPlayerNet = 0;
+        const gameRows = [];
+
+        for (let g = 1; g <= numGames; g++) {
+          const totalEntry  = ENTRY_FEE * N_PLAYERS;
+          const payoutBudget = totalEntry * rewardShare;
+          const adminBudget  = totalEntry * adminShare;
+
+          poolBalance  += payoutBudget;
+          houseBalance += adminBudget;
+
+          const baseUnit = totalWeight > 0 ? (payoutBudget / totalWeight) : 0;
+
+          const boxReward = new Array(101).fill(0);
+          for (let i = 1; i <= 100; i++) {
+            if (hitProb[i] > 0) {
+              boxReward[i] = baseUnit * weights[i] / hitProb[i];
+            } else {
+              boxReward[i] = 0;
+            }
+          }
+          for (let i = 1; i <= 100; i++) {
+            if (boxReward[i] > 0) {
+              boxReward[i] = Math.max(minReward, Math.round(boxReward[i]));
+            }
+          }
+          const remainingReward = boxReward.slice();
+
+          const maxAllowablePayout = safetyFactor > 0 ? (poolBalance / safetyFactor) : poolBalance;
+          let globalScale;
+          if (maxAllowablePayout >= payoutBudget) {
+            globalScale = 1.0;
+          } else if (maxAllowablePayout <= 0) {
+            globalScale = 0.1;
+          } else {
+            globalScale = maxAllowablePayout / payoutBudget;
+          }
+
+          let totalPayout = 0;
+          const events = [];
+          const rewardsPerPlayer = new Array(N_PLAYERS).fill(0);
+
+          for (let i = 1; i <= 100; i++) {
+            if (rng.random() < hitProb[i]) {
+              const poolBefore = poolBalance;
+              let baseRemaining = remainingReward[i];
+              let boxPay = 0;
+
+              if (baseRemaining > 0) {
+                boxPay = Math.floor(baseRemaining * globalScale);
+                if (boxPay <= 0) {
+                  boxPay = minReward;
+                }
+              } else {
+                boxPay = 0;
+              }
+
+              if (boxPay > poolBalance) {
+                boxPay = Math.floor(poolBalance);
+              }
+
+              if (boxPay > 0) {
+                poolBalance -= boxPay;
+                remainingReward[i] -= boxPay;
+                totalPayout += boxPay;
+
+                // assign this reward to a random player
+                const receiver = Math.floor(rng.random() * N_PLAYERS);
+                rewardsPerPlayer[receiver] += boxPay;
+
+                events.push({
+                  boxIndex: i,
+                  rewardGiven: boxPay,
+                  poolBefore: poolBefore,
+                  poolAfter: poolBalance,
+                  playerIndex: receiver
+                });
+              }
+            }
+          }
+
+          const playerNet = totalPayout - totalEntry;
+          const perPlayerNet = rewardsPerPlayer.map(r => r - ENTRY_FEE);
+          const adminNet = totalEntry - totalPayout;
+
+          totalPlayerNet += playerNet;
+          totalAdminNet  += adminNet;
+
+          gameRows.push({
+            gameNo: g,
+            totalEntry,
+            payoutBudget,
+            adminBudget,
+            totalPayout,
+            perPlayerRewards: rewardsPerPlayer,
+            perPlayerNet,
+            playerNet,
+            adminNet,
+            poolAfter: poolBalance,
+            houseAfter: houseBalance,
+            globalScale,
+            events
+          });
+        }
+
+        return {
+          poolBalance,
+          houseBalance,
+          totalAdminNet,
+          totalPlayerNet,
+          avgAdminPerGame: totalAdminNet / numGames,
+          avgPlayerPerGame: totalPlayerNet / numGames,
+          games: gameRows
+        };
+      }
+
+      let pool = 0;
+      let house = 0;
+      const summaries = [];
+      const batches = [];
+
+      for (const c of gameCounts) {
+        const nGames = c;
+        const res = simulateBatch(nGames, pool, house);
+        pool  = res.poolBalance;
+        house = res.houseBalance;
+
+        summaries.push({
+          games: nGames,
+          totalAdminNet: res.totalAdminNet,
+          totalPlayerNet: res.totalPlayerNet,
+          avgAdminPerGame: res.avgAdminPerGame,
+          avgPlayerPerGame: res.avgPlayerPerGame,
+          poolAfter: pool,
+          houseAfter: house
+        });
+
+        batches.push({
+          gamesCount: nGames,
+          games: res.games
+        });
+      }
+
+      return { summaries, batches };
+    }
+
+    // ---------- UI & EVENTS ----------
+    const runBtn       = document.getElementById('runBtn');
+    const resetBtn     = document.getElementById('resetBtn');
+    const exportBtn    = document.getElementById('exportBtn');
+    const statusEl     = document.getElementById('status');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const batchSelect  = document.getElementById('batchSelect');
+    const detailContainer = document.getElementById('detailContainer');
+
+    let lastResult = null;
+    let lastConfig = null;
+    let avgProfitChart = null;
+    let balanceChart   = null;
+
+    function parseConfigFromUI() {
+      const entryFee  = Number(document.getElementById('entryFee').value);
+      const numPlayers = Number(document.getElementById('numPlayers').value);
+      const rewardSharePercent = Number(document.getElementById('rewardShare').value);
+      const gameCountsStr = document.getElementById('gameCounts').value;
+
+      const rewardShare = rewardSharePercent / 100;
+      const gameCounts = gameCountsStr
+        .split(',')
+        .map(s => Number(s.trim()))
+        .filter(n => !isNaN(n) && n > 0);
+
+      if (!entryFee || entryFee <= 0) throw new Error("Entry fee must be > 0");
+      if (!numPlayers || numPlayers < 2 || numPlayers > 4) throw new Error("Players per game must be between 2 and 4");
+      if (rewardShare <= 0 || rewardShare >= 1) throw new Error("Reward share must be between 1% and 99%");
+      if (!gameCounts.length) throw new Error("Please specify at least one valid game count");
+
+      return {
+        entryFee,
+        numPlayers,
+        rewardShare,
+        gameCounts
+      };
+    }
+
+    function renderSummaryTable(summaries) {
+      if (!summaries.length) {
+        resultsContainer.innerHTML = `<p class="small-text">No data.</p>`;
+        exportBtn.disabled = true;
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Games Simulated</th>
+              <th>Total Admin Net Profit</th>
+              <th>Total Player Net Profit</th>
+              <th>Avg Admin Profit / Game</th>
+              <th>Avg Player Net / Game</th>
+              <th>Pool Balance After Batch</th>
+              <th>House Balance After Batch</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      summaries.forEach(row => {
+        html += `
+          <tr>
+            <td>${row.games.toLocaleString()}</td>
+            <td>${row.totalAdminNet.toFixed(2)}</td>
+            <td>${row.totalPlayerNet.toFixed(2)}</td>
+            <td>${row.avgAdminPerGame.toFixed(2)}</td>
+            <td>${row.avgPlayerPerGame.toFixed(2)}</td>
+            <td>${row.poolAfter.toFixed(2)}</td>
+            <td>${row.houseAfter.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table>`;
+      resultsContainer.innerHTML = html;
+      exportBtn.disabled = false;
+    }
+
+    function updateCharts(summaries) {
+      if (!summaries.length) return;
+
+      const labels    = summaries.map(s => s.games.toString());
+      const avgAdmin  = summaries.map(s => s.avgAdminPerGame);
+      const avgPlayer = summaries.map(s => s.avgPlayerPerGame);
+      const poolAfter = summaries.map(s => s.poolAfter);
+      const houseAfter = summaries.map(s => s.houseAfter);
+
+      const avgCtx = document.getElementById('avgProfitChart').getContext('2d');
+      const balCtx = document.getElementById('balanceChart').getContext('2d');
+
+      if (avgProfitChart) avgProfitChart.destroy();
+      if (balanceChart)   balanceChart.destroy();
+
+      avgProfitChart = new Chart(avgCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Avg Admin Profit / Game', data: avgAdmin },
+            { label: 'Avg Player Net / Game',  data: avgPlayer }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e5e7eb' } } },
+          scales: {
+            x: { ticks: { color: '#e5e7eb' } },
+            y: { ticks: { color: '#e5e7eb' } }
+          }
+        }
+      });
+
+      balanceChart = new Chart(balCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Pool Balance After Batch',  data: poolAfter },
+            { label: 'House Balance After Batch', data: houseAfter }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e5e7eb' } } },
+          scales: {
+            x: { ticks: { color: '#e5e7eb' } },
+            y: { ticks: { color: '#e5e7eb' } }
+          }
+        }
+      });
+    }
+
+    function populateBatchSelect(result) {
+      const summaries = result.summaries;
+      batchSelect.innerHTML = '';
+      if (!summaries.length) {
+        batchSelect.innerHTML = '<option value="">No data yet</option>';
+        return;
+      }
+      summaries.forEach((s, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = `${s.games} games`;
+        batchSelect.appendChild(opt);
+      });
+    }
+
+    function renderBatchDetail(index) {
+      if (!lastResult || !lastResult.batches || index == null || index === '') {
+        detailContainer.innerHTML = `<p class="small-text">Select a batch to view details.</p>`;
+        return;
+      }
+      const batch = lastResult.batches[Number(index)];
+      if (!batch) {
+        detailContainer.innerHTML = `<p class="small-text">No data for this batch.</p>`;
+        return;
+      }
+
+      const games = batch.games;
+      if (!games.length) {
+        detailContainer.innerHTML = `<p class="small-text">No games in this batch.</p>`;
+        return;
+      }
+
+      const N_PLAYERS = lastConfig ? lastConfig.numPlayers : 0;
+
+      function fmtReward(rewards, idx) {
+        if (!N_PLAYERS || idx >= N_PLAYERS) return '-';
+        const v = rewards && typeof rewards[idx] === 'number' ? rewards[idx] : 0;
+        return v.toFixed(2);
+      }
+
+      let html = `
+        <div class="small-text" style="margin-bottom:6px;">Showing ${games.length} games. Click a <strong>Game #</strong> to visualise.</div>
+        <div style="max-height:260px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Game #</th>
+              <th>Total Entry</th>
+              <th>Total Payout</th>
+              <th>P1 Reward</th>
+              <th>P2 Reward</th>
+              <th>P3 Reward</th>
+              <th>P4 Reward</th>
+              <th>Admin Net</th>
+              <th>Pool After Game</th>
+              <th>House After Game</th>
+              <th>Scale</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      games.forEach((g, idx) => {
+        const rewards = g.perPlayerRewards || [];
+        html += `
+          <tr>
+            <td>
+              <button class="game-link-btn" data-game-index="${idx}">
+                ${g.gameNo}
+              </button>
+            </td>
+            <td>${g.totalEntry.toFixed(2)}</td>
+            <td>${g.totalPayout.toFixed(2)}</td>
+            <td>${fmtReward(rewards,0)}</td>
+            <td>${fmtReward(rewards,1)}</td>
+            <td>${fmtReward(rewards,2)}</td>
+            <td>${fmtReward(rewards,3)}</td>
+            <td>${g.adminNet.toFixed(2)}</td>
+            <td>${g.poolAfter.toFixed(2)}</td>
+            <td>${g.houseAfter.toFixed(2)}</td>
+            <td>${g.globalScale.toFixed(3)}</td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table></div>
+               <div id="gameVisual" class="small-text" style="margin-top:10px;">
+                 Click a Game # above to see board visual and per-player rewards.
+               </div>`;
+      detailContainer.innerHTML = html;
+    }
+
+    function renderGameVisual(batchIndex, gameIndex) {
+      if (!lastResult || !lastResult.batches) return;
+      const batch = lastResult.batches[batchIndex];
+      if (!batch) return;
+      const game = batch.games[gameIndex];
+      if (!game) return;
+
+      const events = game.events || [];
+      const eventMap = {};
+      events.forEach(ev => {
+        eventMap[ev.boxIndex] = ev;
+      });
+
+      let perPlayerSummary = '';
+      if (lastConfig && game.perPlayerRewards) {
+        const N = lastConfig.numPlayers;
+        const labels = [];
+        for (let i = 0; i < N; i++) {
+          const val = game.perPlayerRewards[i] || 0;
+          labels.push(`P${i+1}: ${val.toFixed(2)}`);
+        }
+        perPlayerSummary = ' | ' + labels.join(', ');
+      }
+
+      let html = `
+        <div class="game-visual-header">
+          <strong>Game #${game.gameNo}</strong> — Total Entry: ${game.totalEntry.toFixed(2)},
+          Total Payout: ${game.totalPayout.toFixed(2)}, Admin Net: ${game.adminNet.toFixed(2)}, Player Net (all): ${game.playerNet.toFixed(2)}
+          ${perPlayerSummary}
+          <br/>Scale used: ${game.globalScale.toFixed(3)}, Pool after game: ${game.poolAfter.toFixed(2)}
+        </div>
+        <div class="board-grid">
+      `;
+
+      for (let box = 1; box <= 100; box++) {
+        const ev = eventMap[box];
+        if (ev) {
+          html += `
+            <div class="board-cell hit" title="Box ${box} → +${ev.rewardGiven}, Pool ${ev.poolBefore.toFixed(0)} → ${ev.poolAfter.toFixed(0)}">
+              ${box}
+              <span>+${ev.rewardGiven}</span>
+            </div>
+          `;
+        } else {
+          html += `<div class="board-cell">${box}</div>`;
+        }
+      }
+
+      html += `</div>`;
+
+      html += `<div class="timeline">`;
+      if (events.length === 0) {
+        html += `<div class="timeline-item">No box hits in this game.</div>`;
+      } else {
+        events.forEach((ev, idx) => {
+          const pid = typeof ev.playerIndex === 'number' ? `P${ev.playerIndex + 1}: ` : '';
+          html += `
+            <div class="timeline-item">
+              Step ${idx + 1}: ${pid}Box ${ev.boxIndex} → +${ev.rewardGiven}
+              (Pool: ${ev.poolBefore.toFixed(0)} → ${ev.poolAfter.toFixed(0)})
+            </div>
+          `;
+        });
+      }
+      html += `</div>`;
+
+      const gv = document.getElementById('gameVisual');
+      if (gv) gv.innerHTML = html;
+    }
+
+    function exportSummaryCSV(summaries) {
+      if (!summaries.length) return;
+
+      const header = [
+        'Games_Simulated',
+        'Total_Admin_Net_Profit',
+        'Total_Player_Net_Profit',
+        'Average_Admin_Profit_per_Game',
+        'Average_Player_Net_per_Game',
+        'PoolBalance_After_Batch',
+        'HouseBalance_After_Batch'
+      ];
+
+      const rows = summaries.map(s => [
+        s.games,
+        s.totalAdminNet.toFixed(2),
+        s.totalPlayerNet.toFixed(2),
+        s.avgAdminPerGame.toFixed(2),
+        s.avgPlayerPerGame.toFixed(2),
+        s.poolAfter.toFixed(2),
+        s.houseAfter.toFixed(2)
+      ]);
+
+      let csv = header.join(',') + '\n';
+      rows.forEach(r => { csv += r.join(',') + '\n'; });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'chances_game_economy_summary.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    const runBtnEl = runBtn;
+    runBtnEl.addEventListener('click', () => {
+      statusEl.innerHTML = '';
+      resultsContainer.innerHTML = '';
+      detailContainer.innerHTML = '<p class="small-text">Running simulation...</p>';
+      try {
+        const config = parseConfigFromUI();
+        lastConfig = config;
+        runBtnEl.disabled = true;
+        exportBtn.disabled = true;
+        statusEl.innerHTML = '<span class="spinner"></span> Running simulation...';
+
+        setTimeout(() => {
+          lastResult = runSimulation(config);
+          renderSummaryTable(lastResult.summaries);
+          updateCharts(lastResult.summaries);
+          populateBatchSelect(lastResult);
+          renderBatchDetail(batchSelect.value || '0');
+          statusEl.textContent = 'Done ✔';
+          runBtnEl.disabled = false;
+        }, 20);
+      } catch (err) {
+        statusEl.textContent = '';
+        resultsContainer.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+        detailContainer.innerHTML = `<p class="small-text">Fix the error above and re-run.</p>`;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      document.getElementById('entryFee').value = 200;
+      document.getElementById('numPlayers').value = 2;
+      document.getElementById('rewardShare').value = 50;
+      document.getElementById('gameCounts').value = '100,500,1000,5000';
+      resultsContainer.innerHTML = `<p class="small-text">Reset to defaults. Click <strong>Run Simulation</strong> again.</p>`;
+      detailContainer.innerHTML = `<p class="small-text">Run a simulation to view per-game details.</p>`;
+      statusEl.textContent = '';
+      exportBtn.disabled = true;
+      batchSelect.innerHTML = '<option value="">No data yet</option>';
+      if (avgProfitChart) avgProfitChart.destroy();
+      if (balanceChart)   balanceChart.destroy();
+      lastResult = null;
+      lastConfig = null;
+    });
+
+    exportBtn.addEventListener('click', () => {
+      if (lastResult && lastResult.summaries && lastResult.summaries.length) {
+        exportSummaryCSV(lastResult.summaries);
+      }
+    });
+
+    batchSelect.addEventListener('change', () => {
+      renderBatchDetail(batchSelect.value);
+    });
+
+    // delegate click for game visualisation
+    detailContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.game-link-btn');
+      if (!btn) return;
+      const gameIndex = Number(btn.dataset.gameIndex);
+      const batchIndex = Number(batchSelect.value || 0);
+      renderGameVisual(batchIndex, gameIndex);
+    });
+  </script>
+</body>
+</html>
