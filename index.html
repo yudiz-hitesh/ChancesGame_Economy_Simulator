@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chances Game Economy Simulator</title>
-
-  <!-- Chart.js for graphs -->
+  <title>Chances Game / SNL Economy Simulator</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -177,7 +174,7 @@
       border-color: #38bdf8;
     }
 
-    /* --- BOARD GRID & CELLS (2x size, centered) --- */
+    /* --- BOARD (2x size, center) --- */
     .board-grid {
       display: grid;
       grid-template-columns: repeat(10, 64px);
@@ -224,8 +221,6 @@
       line-height: 1;
       margin-top: 0;
     }
-
-    /* Snake red, Ladder yellow with brown text */
     .board-cell.snake-start,
     .board-cell.snake-end {
       background: #7f1d1d;
@@ -266,56 +261,7 @@
       color: #cbd5f5;
     }
 
-    /* Info icon + tooltip */
-    .info-icon {
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      border: 1px solid #38bdf8;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      cursor: pointer;
-    }
-    .info-icon:hover {
-      background: #0f172a;
-    }
-    .tooltip {
-      position: absolute;
-      max-width: 280px;
-      background: #020617;
-      border-radius: 10px;
-      border: 1px solid #38bdf8;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #e5e7eb;
-      box-shadow: 0 12px 25px rgba(0,0,0,0.6);
-      z-index: 9999;
-    }
-    .tooltip.hidden {
-      display: none;
-    }
-    .tooltip-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: #facc15;
-    }
-    .tooltip-close {
-      position: absolute;
-      top: 4px;
-      right: 6px;
-      border: none;
-      background: transparent;
-      color: #9ca3af;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    /* Dice path visualisation */
+    /* Dice paths */
     .dice-path {
       margin-top: 10px;
       border-top: 1px solid #1e293b;
@@ -346,334 +292,149 @@
       background: #020617;
       position: static;
     }
+    .dice-total-row td {
+      font-weight: 600;
+      background: #020617;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Chances Game Economy Simulator</h1>
+    <h1>Chances Game / SNL Economy Simulator</h1>
     <p class="small-text">
-      Test your <strong>Chances Game multiplayer economy</strong> with a <strong>dynamic RTP engine</strong>, Snakes &amp; Ladders movement, weekly leaderboard pool and per-player loss/win streak based dice bias.
+      Multiplayer Snakes &amp; Ladders economy with adaptive RTP, per-player dice bias and leaderboard pool.
     </p>
 
-    <!-- CONFIG CARD -->
+    <!-- CONFIG -->
     <div class="card">
       <h2>Configuration</h2>
       <div class="grid">
         <div>
-          <label>
-            <span class="label-row">
-              <span>Entry Fee per Player</span>
-              <button type="button" class="info-icon" data-title="Entry Fee per Player" data-info="Amount each player pays to join one game.\n\nIf N players join, total entry for that game is:\ntotalEntry = entryFee × N\n\nExample: entryFee = 200 and N = 2 → totalEntry = 400.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Entry Fee per Player</label>
           <input id="entryFee" type="number" value="200" min="1" step="1" />
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Players per Game (N)</span>
-              <button type="button" class="info-icon" data-title="Players per Game" data-info="How many players sit in one game instance. The simulator supports 2–4 players.\n\nTotal entry for each game:\ntotalEntry = entryFee × N\n\nThis also controls how many players share the payouts and how leaderboard winnings are distributed.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Players per Game (2–4)</label>
           <input id="numPlayers" type="number" value="2" min="2" max="4" step="1" />
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Base Admin % (normal)</span>
-              <button type="button" class="info-icon" data-title="Base Admin %" data-info="Default admin profit percentage on each game when Adaptive RTP is not in rescue mode.\n\nFor one game:\ntotalEntry = entryFee × N\nadminBudget ≈ totalEntry × (baseAdmin% / 100)\nplayerShare ≈ totalEntry − adminBudget\n\nExample: baseAdmin% = 50 → admin takes about 50% of the game entry, remaining 50% goes to players (gameplay + leaderboard).">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Base Admin % (normal)</label>
           <input id="baseAdminPct" type="number" value="50" min="0" max="90" step="1" />
-          <span class="small-text">Used when players are not in heavy loss</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Medium-Loss Admin %</span>
-              <button type="button" class="info-icon" data-title="Medium-Loss Admin %" data-info="Reduced admin profit when at least one player is in medium-loss zone in the recent window.\n\nWhen triggered, the game uses:\nadminPctGame = mediumLossAdmin%\nPlayer share (100 − adminPctGame) increases, so players get higher RTP.\n\nExample: Base = 50%, Medium = 30% → system returns more value back to players while still keeping some margin.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Medium-Loss Admin %</label>
           <input id="midAdminPct" type="number" value="30" min="0" max="90" step="1" />
-          <span class="small-text">Used when worst player loss crosses medium threshold</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>High-Loss Admin %</span>
-              <button type="button" class="info-icon" data-title="High-Loss Admin %" data-info="Very low admin profit when at least one player is in heavy-loss zone in the recent window.\n\nWhen triggered, the game uses:\nadminPctGame = highLossAdmin%\nPlayer share becomes very high so you can give big comeback wins.\n\nExample: Base = 50%, High = 10% → only 10% margin, 90% of entry fees flow to players (gameplay + leaderboard).">
-                i
-              </button>
-            </span>
-          </label>
+          <label>High-Loss Admin %</label>
           <input id="highAdminPct" type="number" value="10" min="0" max="90" step="1" />
-          <span class="small-text">Used when worst player loss crosses high threshold</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Medium-Loss Threshold (× entry fee)</span>
-              <button type="button" class="info-icon" data-title="Medium-Loss Threshold" data-info="Defines when the system considers a player to be in MEDIUM-LOSS based on the recent window.\n\nWe track each player's net result over the last 20 games:\nrecentNet = Σ (rewards − entryFee) over last 20 games\nrecentLoss = max(0, −recentNet)\n\nIf the worst recentLoss among players ≥ mediumThreshold × entryFee, then Medium-Loss Admin % is used.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Medium-Loss Threshold (× entry)</label>
           <input id="midLossMultiple" type="number" value="3" min="0.5" step="0.5" />
-          <span class="small-text">Example: 3 ⇒ loss ≥ 3 × entry triggers medium RTP</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>High-Loss Threshold (× entry fee)</span>
-              <button type="button" class="info-icon" data-title="High-Loss Threshold" data-info="Defines when the system considers a player to be in HIGH-LOSS based on the recent window.\n\nUsing the same recentNet calculation (last 20 games), if worst recentLoss ≥ highThreshold × entryFee, then High-Loss Admin % is used.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>High-Loss Threshold (× entry)</label>
           <input id="highLossMultiple" type="number" value="6" min="0.5" step="0.5" />
-          <span class="small-text">Example: 6 ⇒ loss ≥ 6 × entry triggers high RTP</span>
         </div>
 
-        <!-- NEW: streak & per-game thresholds -->
+        <!-- streak config -->
         <div>
-          <label>
-            <span class="label-row">
-              <span>Loss Streak Size (games)</span>
-              <button type="button" class="info-icon" data-title="Loss Streak Size" data-info="How many consecutive bad games mark a player as 'losing' for dice rescue.\n\nIf a player's net result per game ≤ Loss Game Threshold for this many games in a row, dice will try to move them towards reward boxes.\n\nExample: 3 → after 3 continuous bad games, next turns get recovery bias.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Loss Streak Size (games)</label>
           <input id="lossStreakTrigger" type="number" value="3" min="1" step="1" />
-          <span class="small-text">Example: 3 continuous bad games ⇒ rescue mode</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Win Streak Size (games)</span>
-              <button type="button" class="info-icon" data-title="Win Streak Size" data-info="How many consecutive big wins mark a player as 'too hot' for dice cooldown.\n\nIf a player's net result per game ≥ Big Win Threshold for this many games in a row, and the player is overall/recent in profit, dice will try to avoid extra easy rewards.\n\nExample: 3 → after 3 big wins in profit zone, next few turns are more conservative.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Win Streak Size (games)</label>
           <input id="winStreakTrigger" type="number" value="3" min="1" step="1" />
-          <span class="small-text">Example: 3 big wins ⇒ cooldown mode (only if player is overall/recent plus)</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Loss Game Threshold (× entry lost)</span>
-              <button type="button" class="info-icon" data-title="Loss Game Threshold" data-info="Defines what counts as a 'bad game' for streaks.\n\nWe compute net per game:\nnet = (reward − entryFee).\nIf net ≤ −lossMultiple × entryFee, it is counted as a loss for streak.\n\nExample: 0.5 → for entry 200, any net ≤ −100 is a loss game.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Loss Game Threshold (× entry)</label>
           <input id="lossGameMultiple" type="number" value="0.5" min="0.1" step="0.1" />
-          <span class="small-text">Net ≤ −(this × entry) ⇒ loss streak +1</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Big Win Threshold (× entry profit)</span>
-              <button type="button" class="info-icon" data-title="Big Win Threshold" data-info="Defines what counts as a 'big win' for win streaks.\n\nNet per game:\nnet = (reward − entryFee).\nIf net ≥ bigWinMultiple × entryFee, it is counted as a big win.\n\nExample: 1.5 → for entry 200, any net ≥ +300 is a big win.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Big Win Threshold (× entry)</label>
           <input id="bigWinMultiple" type="number" value="1.5" min="0.5" step="0.1" />
-          <span class="small-text">Net ≥ (this × entry) ⇒ win streak +1</span>
         </div>
-        <!-- END new streak config -->
 
+        <!-- leaderboard from player share -->
         <div>
-          <label>
-            <span class="label-row">
-              <span>Leaderboard Reserve % of Player Share</span>
-              <button type="button" class="info-icon" data-title="Leaderboard Reserve %" data-info="How much of the PLAYERS' share is reserved for the weekly leaderboard.\n\nFor each game:\nplayerShare = totalEntry × (1 − adminPctGame/100)\nleaderboardContribution = playerShare × (lbReserve% / 100)\nGameplay Budget = playerShare − leaderboardContribution\n\nSo this % reduces in-game payouts and builds a separate prize pool for weekly winners. Admin share is NOT touched.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Leaderboard Reserve % of Player Share</label>
           <input id="lbReservePct" type="number" value="10" min="0" max="100" step="1" />
-          <span class="small-text">% from players' side → LB pool (not from admin profit)</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Leaderboard Top N</span>
-              <button type="button" class="info-icon" data-title="Leaderboard Top N" data-info="How many leaderboard ranks receive a prize each cycle.\n\nExample: Top N = 3 → only Rank 1, 2, 3 get a share from the leaderboard pool.">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Leaderboard Top N</label>
           <input id="lbTopN" type="number" value="3" min="1" max="10" step="1" />
-          <span class="small-text">Number of ranks rewarded (e.g. 3)</span>
         </div>
-
         <div>
-          <label>
-            <span class="label-row">
-              <span>Leaderboard Prize % per Rank</span>
-              <button type="button" class="info-icon" data-title="Leaderboard Prize %" data-info="Split of the leaderboard pool between the top ranks.\n\nFormat: comma separated percentages.\nExample: 50,30,20 with Top N = 3 →\nRank 1 gets 50% of pool\nRank 2 gets 30% of pool\nRank 3 gets 20% of pool">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Leaderboard Prize % per Rank</label>
           <input id="lbPrizePercents" type="text" value="50,30,20" />
-          <span class="small-text">Comma separated, e.g. 50,30,20 for Top 3</span>
         </div>
 
         <div>
-          <label>
-            <span class="label-row">
-              <span>Game Counts (comma separated)</span>
-              <button type="button" class="info-icon" data-title="Game Counts" data-info="Defines how many games to simulate in each batch. Each value becomes one row in the summary table.\n\nExample: 100,500,1000,5000 →\nBatch 1: 100 games\nBatch 2: 500 more games\nBatch 3: 1000 more games\nBatch 4: 5000 more games">
-                i
-              </button>
-            </span>
-          </label>
+          <label>Game Counts (batches)</label>
           <input id="gameCounts" type="text" value="100,500,1000,5000" />
-          <span class="small-text">Each value = one batch (row in summary)</span>
         </div>
 
         <div>
-          <label>&nbsp;</label>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <input id="adaptiveRtp" type="checkbox" checked />
-            <span class="small-text">
-              Adaptive RTP / Rescue Mode
-              <button type="button" class="info-icon" data-title="Adaptive RTP / Rescue Mode" data-info="When enabled, the engine adjusts admin % per game based on recent player loss.\n\n• Normal → Base Admin %\n• Medium-loss → Medium-Loss Admin %\n• Heavy-loss → High-Loss Admin %\n\nDice is random by default, but per-player loss/win streak can bias it:\n• Loss streak ≥ Loss Streak Size → move towards rewards.\n• Win streak ≥ Win Streak Size AND player overall/recent in profit → avoid extra easy rewards.\nEvery dice modification is logged in the Note column.">
-                i
-              </button>
-            </span>
+          <label>Adaptive RTP / Rescue Mode</label>
+          <div>
+            <input id="adaptiveRtp" type="checkbox" checked /> <span class="small-text">On</span>
           </div>
         </div>
       </div>
 
       <div class="button-row">
-        <button id="runBtn">
-          ▶ Run Simulation
-        </button>
-        <button id="resetBtn" class="btn-secondary" type="button">
-          Reset Defaults
-        </button>
-        <button id="exportBtn" class="btn-outline" type="button" disabled>
-          ⬇ Export Summary CSV
-        </button>
+        <button id="runBtn">▶ Run Simulation</button>
+        <button id="resetBtn" class="btn-secondary" type="button">Reset Defaults</button>
+        <button id="exportBtn" class="btn-outline" type="button" disabled>⬇ Export Summary CSV</button>
         <span id="status" class="status"></span>
       </div>
     </div>
 
-    <!-- SUMMARY CARD -->
+    <!-- SUMMARY -->
     <div class="card">
       <h2>Summary Results</h2>
-      <p class="small-text">
-        One row per batch (e.g. 100 / 500 / 1000 / 5000 games).  
-        Net values are combined over all players for that batch.
-      </p>
+      <p class="small-text">One row per batch. Net values are combined for all players.</p>
       <div id="resultsContainer">
-        <p class="small-text">
-          No results yet. Configure and click <strong>Run Simulation</strong>.
-        </p>
+        <p class="small-text">No results yet.</p>
       </div>
     </div>
 
-    <!-- PER-GAME DETAIL CARD -->
+    <!-- DETAILS -->
     <div class="card">
       <h2>Per-Game Detail</h2>
-      <p class="small-text">
-        Select a batch and click a <strong>Game #</strong> to see board playback, dice rolls, and per-player rewards.
-      </p>
-      <div class="button-row" style="margin-top: 0;">
-        <label for="batchSelect" class="small-text">Select Batch:</label>
+      <p class="small-text">Select batch and click Game # to see board and dice paths.</p>
+      <div class="button-row" style="margin-top:0;">
+        <label class="small-text">Select Batch:</label>
         <select id="batchSelect">
           <option value="">No data yet</option>
         </select>
       </div>
       <div id="detailContainer" style="margin-top:10px;">
-        <p class="small-text">Run a simulation to view per-game details.</p>
+        <p class="small-text">Run a simulation to view details.</p>
       </div>
     </div>
 
-    <!-- CHARTS CARD -->
+    <!-- CHARTS -->
     <div class="card">
       <h2>Charts</h2>
-      <p class="small-text">
-        Visual view of average profit per game and balance growth across batches.
-      </p>
       <div class="charts-grid">
-        <div>
-          <canvas id="avgProfitChart" height="200"></canvas>
-        </div>
-        <div>
-          <canvas id="balanceChart" height="200"></canvas>
-        </div>
+        <div><canvas id="avgProfitChart" height="200"></canvas></div>
+        <div><canvas id="balanceChart" height="200"></canvas></div>
       </div>
     </div>
 
-    <!-- LEADERBOARD CARD -->
+    <!-- LEADERBOARD -->
     <div class="card">
       <h2>Weekly Leaderboard (Simulated)</h2>
-      <p class="small-text">
-        Based on total winnings across all simulated games. Prizes are paid from the reserved leaderboard pool (taken from players' share, not admin profit).
-      </p>
       <div id="leaderboardContainer">
-        <p class="small-text">Run a simulation to see leaderboard standings.</p>
+        <p class="small-text">Run simulation to see leaderboard.</p>
       </div>
     </div>
-
-    <!-- NOTES CARD -->
-    <div class="card">
-      <h2>Algorithm Notes</h2>
-      <p class="small-text">
-        100-box Snakes &amp; Ladders board with weights &amp; approximate hit probabilities per zone (only ~25 boxes actually have rewards; snake &amp; ladder starts never have rewards).
-      </p>
-      <ul class="small-text">
-        <li>Boxes 1–20: weight 1, base hitProb ~0.7</li>
-        <li>Boxes 21–60: weight 2, base hitProb ~0.5</li>
-        <li>Boxes 61–90: weight 3, base hitProb ~0.3</li>
-        <li>Boxes 91–99: weight 4, base hitProb ~0.15</li>
-        <li>Box 100: weight 8, base hitProb ~0.05</li>
-      </ul>
-      <p class="small-text">
-        Dynamic RTP + Dice + Per-game win caps:
-        <br/>• Dice is random by default.
-        <br/>• Loss streak (per player) ≥ Loss Streak Size → bias towards reward boxes for that player.
-        <br/>• Win streak ≥ Win Streak Size AND player overall/recent in profit → bias away from big extra rewards.
-        <br/>• In each game, the top winning player is capped: 2p ⇒ max ~80% of that game payout, 3p ⇒ ~70%, 4p ⇒ ~60%. Remaining payout is redistributed to other players.
-        <br/>• Every dice modification is logged in the <strong>Note</strong> column with original vs final dice.
-        <br/>• Game ends when any player reaches box 100.
-      </p>
-    </div>
-  </div>
-
-  <!-- Shared tooltip element -->
-  <div id="configTooltip" class="tooltip hidden">
-    <button class="tooltip-close" type="button" aria-label="Close">✕</button>
-    <div class="tooltip-title"></div>
-    <div class="tooltip-body"></div>
   </div>
 
   <script>
-    // --- Global Snakes & Ladders definition ---
+    /* ---------- Board (Snakes & Ladders) ---------- */
     const LADDERS = [
       { start: 4,  end: 18 },
       { start: 22, end: 42 },
@@ -694,6 +455,7 @@
       return { random: () => Math.random() };
     }
 
+    /* ---------- Core Simulation ---------- */
     function runSimulation(config) {
       const ENTRY_FEE   = config.entryFee;
       const N_PLAYERS   = config.numPlayers;
@@ -706,7 +468,12 @@
       const midLossMultiple  = config.midLossMultiple;
       const highLossMultiple = config.highLossMultiple;
 
-      const lbReservePct = config.lbReservePct; // % of player share
+      const lossStreakTrigger = config.lossStreakTrigger;
+      const winStreakTrigger  = config.winStreakTrigger;
+      const lossGameMultiple  = config.lossGameMultiple;
+      const bigWinMultiple    = config.bigWinMultiple;
+
+      const lbReservePct = config.lbReservePct;
       const gameCounts   = config.gameCounts;
       const rng          = createRNG();
 
@@ -716,47 +483,35 @@
       const weights = new Array(101).fill(0);
       const hitProb = new Array(101).fill(0);
 
-      // Base zone weights & probabilities
       for (let i = 1; i <= 100; i++) {
         if (i >= 1 && i <= 20) {
-          weights[i] = 1;
-          hitProb[i] = 0.7;
+          weights[i] = 1; hitProb[i] = 0.7;
         } else if (i >= 21 && i <= 60) {
-          weights[i] = 2;
-          hitProb[i] = 0.5;
+          weights[i] = 2; hitProb[i] = 0.5;
         } else if (i >= 61 && i <= 90) {
-          weights[i] = 3;
-          hitProb[i] = 0.3;
+          weights[i] = 3; hitProb[i] = 0.3;
         } else if (i >= 91 && i <= 99) {
-          weights[i] = 4;
-          hitProb[i] = 0.15;
+          weights[i] = 4; hitProb[i] = 0.15;
         } else if (i === 100) {
-          weights[i] = 8;
-          hitProb[i] = 0.05;
+          weights[i] = 8; hitProb[i] = 0.05;
         }
       }
 
-      // snake & ladder start cannot have reward
-      for (let i = 1; i <= 100; i++) {
-        if (ladderStarts.has(i) || snakeStarts.has(i)) {
-          hitProb[i] = 0;
-        }
-      }
-
-      // only ~25 reward boxes
-      const TARGET_REWARD_BOXES = 25;
+      // reward boxes: ~25 only, and never on snake/ladder starts
       const candidates = [];
       for (let i = 1; i <= 100; i++) {
-        if (hitProb[i] > 0) candidates.push(i);
+        if (hitProb[i] > 0 && !ladderStarts.has(i) && !snakeStarts.has(i)) {
+          candidates.push(i);
+        }
       }
       const rewardCells = new Set();
+      const TARGET_REWARD_BOXES = 25;
       if (candidates.length <= TARGET_REWARD_BOXES) {
         candidates.forEach(i => rewardCells.add(i));
       } else {
         const step = candidates.length / TARGET_REWARD_BOXES;
         for (let k = 0; k < TARGET_REWARD_BOXES; k++) {
-          const idx = Math.floor(k * step);
-          rewardCells.add(candidates[idx]);
+          rewardCells.add(candidates[Math.floor(k * step)]);
         }
       }
       for (let i = 1; i <= 100; i++) {
@@ -772,32 +527,14 @@
       const LOSS_WINDOW = 20;
       const recentNets = Array.from({ length: N_PLAYERS }, () => []);
 
-      // per-player streaks from config
       const lossStreak = new Array(N_PLAYERS).fill(0);
       const winStreak  = new Array(N_PLAYERS).fill(0);
 
-      const LOSS_STREAK_TRIGGER = config.lossStreakTrigger;
-      const WIN_STREAK_TRIGGER  = config.winStreakTrigger;
-      const LOSS_GAME_NET_THRESHOLD = -config.lossGameMultiple * ENTRY_FEE;
-      const BIG_WIN_NET_THRESHOLD   =  config.bigWinMultiple * ENTRY_FEE;
+      const LOSS_GAME_NET_THRESHOLD = -lossGameMultiple * ENTRY_FEE;
+      const BIG_WIN_NET_THRESHOLD   =  bigWinMultiple * ENTRY_FEE;
 
       const leaderboardScores = new Array(N_PLAYERS).fill(0);
       let leaderboardPool = 0;
-
-      function weightedRandomPlayer(rng, weightsArr) {
-        let total = 0;
-        for (let w of weightsArr) total += w;
-        if (total <= 0) {
-          return Math.floor(rng.random() * weightsArr.length);
-        }
-        let r = rng.random() * total;
-        let acc = 0;
-        for (let i = 0; i < weightsArr.length; i++) {
-          acc += weightsArr[i];
-          if (r <= acc) return i;
-        }
-        return weightsArr.length - 1;
-      }
 
       function applySnakesAndLadders(pos) {
         let dest = pos;
@@ -818,7 +555,6 @@
         const minReward = 1;
         const safetyFactor = 1.5;
 
-        // per-game cap fraction for top winner
         const CAP_FRACTION =
           (N_PLAYERS <= 2) ? 0.8 :
           (N_PLAYERS === 3) ? 0.7 : 0.6;
@@ -826,7 +562,6 @@
         for (let g = 1; g <= numGames; g++) {
           const positions = new Array(N_PLAYERS).fill(0);
 
-          // admin % per game based on recent worst loss
           let adminPctGame = baseAdminPct;
           if (adaptiveRtp) {
             let worstLossAbs = 0;
@@ -835,23 +570,16 @@
               let sum = 0;
               for (let k = 0; k < arr.length; k++) sum += arr[k];
               const lossAbs = Math.max(0, -sum);
-              if (lossAbs > worstLossAbs) worstLossAbs = lossAbs;
+              worstLossAbs = Math.max(worstLossAbs, lossAbs);
             }
-            if (worstLossAbs >= highLossMultiple * ENTRY_FEE) {
-              adminPctGame = highAdminPct;
-            } else if (worstLossAbs >= midLossMultiple * ENTRY_FEE) {
-              adminPctGame = midAdminPct;
-            } else {
-              adminPctGame = baseAdminPct;
-            }
+            if (worstLossAbs >= highLossMultiple * ENTRY_FEE)      adminPctGame = highAdminPct;
+            else if (worstLossAbs >= midLossMultiple * ENTRY_FEE)  adminPctGame = midAdminPct;
           }
 
           const playerSharePct = 1 - adminPctGame / 100;
-
           const totalEntry  = ENTRY_FEE * N_PLAYERS;
           const playerShare = totalEntry * playerSharePct;
 
-          // leaderboard from players' share
           const lbContributionFromPlayers = lbReservePct > 0
             ? playerShare * (lbReservePct / 100)
             : 0;
@@ -861,9 +589,9 @@
 
           let lbContribution = lbContributionFromPlayers;
 
-          poolBalance      += payoutBudget;
-          leaderboardPool  += lbContributionFromPlayers;
-          houseBalance     += adminBudget;
+          poolBalance     += payoutBudget;
+          leaderboardPool += lbContributionFromPlayers;
+          houseBalance    += adminBudget;
 
           const baseUnit = activeWeightSum > 0 ? (payoutBudget / activeWeightSum) : 0;
 
@@ -874,19 +602,17 @@
             }
           }
           for (let i = 1; i <= 100; i++) {
-            if (boxReward[i] > 0) boxReward[i] = Math.max(minReward, Math.round(boxReward[i]));
+            if (boxReward[i] > 0) {
+              boxReward[i] = Math.max(minReward, Math.floor(boxReward[i])); // integer
+            }
           }
           const remainingReward = boxReward.slice();
 
           const maxAllowablePayout = safetyFactor > 0 ? (poolBalance / safetyFactor) : poolBalance;
           let globalScale;
-          if (maxAllowablePayout >= payoutBudget) {
-            globalScale = 1.0;
-          } else if (maxAllowablePayout <= 0) {
-            globalScale = 0.1;
-          } else {
-            globalScale = maxAllowablePayout / payoutBudget;
-          }
+          if (maxAllowablePayout >= payoutBudget)      globalScale = 1.0;
+          else if (maxAllowablePayout <= 0)           globalScale = 0.1;
+          else                                        globalScale = maxAllowablePayout / payoutBudget;
 
           let totalPayout = 0;
           const events = [];
@@ -895,29 +621,18 @@
           let turnCounter = 1;
           let gameOver = false;
 
-          const playerNeedWeightsBase = lifetimeNet.map(net => 1 + Math.max(0, -net / ENTRY_FEE));
-
           function isLosingPlayer(pIdx) {
-            return lossStreak[pIdx] >= LOSS_STREAK_TRIGGER;
+            return lossStreak[pIdx] >= lossStreakTrigger;
           }
-
-          // cooldown only when streak high + player profit zone
           function isWinningTooMuch(pIdx) {
             const lifetime = lifetimeNet[pIdx];
             let recentNet = 0;
             const arr = recentNets[pIdx] || [];
-            for (let i = 0; i < arr.length; i++) {
-              recentNet += arr[i];
-            }
+            for (let i = 0; i < arr.length; i++) recentNet += arr[i];
             const hotByLifetime = lifetime > 0;
             const hotByRecent   = recentNet >= BIG_WIN_NET_THRESHOLD;
-
-            return (
-              winStreak[pIdx] >= WIN_STREAK_TRIGGER &&
-              (hotByLifetime || hotByRecent)
-            );
+            return (winStreak[pIdx] >= winStreakTrigger) && (hotByLifetime || hotByRecent);
           }
-
           function simulateDestFrom(pos, d) {
             let tmpPos = pos + d;
             if (tmpPos > 100) tmpPos = 100;
@@ -928,7 +643,6 @@
           while (!gameOver) {
             for (let p = 0; p < N_PLAYERS; p++) {
               if (gameOver) break;
-
               let fromPos = positions[p];
               if (fromPos >= 100) continue;
 
@@ -938,53 +652,42 @@
 
               const losing         = isLosingPlayer(p);
               const winningTooMuch = isWinningTooMuch(p);
-
-              const randomDest = simulateDestFrom(fromPos, randomDice);
+              const randomDest     = simulateDestFrom(fromPos, randomDice);
 
               if (adaptiveRtp && losing) {
-                let chosen = null;
-                let chosenDest = randomDest;
+                let chosen = null; let chosenDest = randomDest;
                 for (let d = 1; d <= 6; d++) {
                   const dest = simulateDestFrom(fromPos, d);
                   if (rewardCells.has(dest) && remainingReward[dest] > 0) {
-                    chosen = d;
-                    chosenDest = dest;
-                    break;
+                    chosen = d; chosenDest = dest; break;
                   }
                 }
                 if (chosen !== null && chosen !== randomDice) {
                   finalDice = chosen;
                   diceReason = `Random dice was ${randomDice}, changed to ${finalDice} to help recovery towards reward box ${chosenDest}.`;
                 } else {
-                  finalDice = randomDice;
                   diceReason = `Random dice ${randomDice} used as-is.`;
                 }
               } else if (adaptiveRtp && winningTooMuch) {
-                let destRandomIsReward = rewardCells.has(randomDest) && remainingReward[randomDest] > 0;
-                if (destRandomIsReward) {
-                  let alt = null;
-                  let altDest = randomDest;
+                const destIsReward = rewardCells.has(randomDest) && remainingReward[randomDest] > 0;
+                if (destIsReward) {
+                  let alt = null; let altDest = randomDest;
                   for (let d = 1; d <= 6; d++) {
                     const dest = simulateDestFrom(fromPos, d);
                     if (!rewardCells.has(dest) || remainingReward[dest] <= 0) {
-                      alt = d;
-                      altDest = dest;
-                      break;
+                      alt = d; altDest = dest; break;
                     }
                   }
                   if (alt !== null && alt !== randomDice) {
                     finalDice = alt;
-                    diceReason = `Random dice was ${randomDice} (would hit reward), changed to ${finalDice} to limit extra win (landed on ${altDest}).`;
+                    diceReason = `Random dice was ${randomDice} (reward), changed to ${finalDice} to limit extra win (landed on ${altDest}).`;
                   } else {
-                    finalDice = randomDice;
                     diceReason = `Random dice ${randomDice} used as-is (no safe alternative).`;
                   }
                 } else {
-                  finalDice = randomDice;
-                  diceReason = `Random dice ${randomDice} used as-is (player already in profit, but no immediate big reward).`;
+                  diceReason = `Random dice ${randomDice} used as-is (player already in profit, but no instant reward).`;
                 }
               } else {
-                finalDice = randomDice;
                 diceReason = `Random dice ${randomDice} used as-is.`;
               }
 
@@ -994,11 +697,8 @@
               let toPos = snlInfo.dest;
 
               let snlNote = '';
-              if (snlInfo.type === 'ladder') {
-                snlNote = ` Climbed Ladder ${snlInfo.idx + 1}: ${stepPos} → ${toPos}.`;
-              } else if (snlInfo.type === 'snake') {
-                snlNote = ` Bitten by Snake ${snlInfo.idx + 1}: ${stepPos} → ${toPos}.`;
-              }
+              if (snlInfo.type === 'ladder') snlNote = ` Climbed Ladder ${snlInfo.idx + 1}: ${stepPos} → ${toPos}.`;
+              else if (snlInfo.type === 'snake') snlNote = ` Bitten by Snake ${snlInfo.idx + 1}: ${stepPos} → ${toPos}.`;
 
               positions[p] = toPos;
 
@@ -1006,71 +706,40 @@
               if (rewardCells.has(toPos) && remainingReward[toPos] > 0) {
                 let baseRemaining = remainingReward[toPos];
                 let boxPay = 0;
-
                 if (baseRemaining > 0) {
                   boxPay = Math.floor(baseRemaining * globalScale);
-                  if (boxPay <= 0) boxPay = minReward;
+                  if (boxPay < minReward) boxPay = minReward;
                 }
-                if (boxPay > poolBalance) {
-                  boxPay = Math.floor(poolBalance);
-                }
-
+                if (boxPay > poolBalance) boxPay = Math.floor(poolBalance);
                 if (boxPay > 0) {
-                  let remainingToAllocate = boxPay;
-                  let allocatedTotal = 0;
-                  let poolBeforeLocal = poolBalance;
-
-                  // allocate this box's reward across players with per-game cap
-                  for (let step = 0; step < N_PLAYERS && remainingToAllocate > 0.01; step++) {
-                    const newTotalPayoutCandidate = totalPayout + remainingToAllocate;
-
-                    const capacities = [];
-                    const choiceWeights = [];
-                    for (let i = 0; i < N_PLAYERS; i++) {
-                      const maxAllowedForPlayer = CAP_FRACTION * newTotalPayoutCandidate;
-                      const capacity = maxAllowedForPlayer - perPlayerRewards[i];
-                      capacities[i] = capacity;
-                      choiceWeights[i] = capacity > 0 ? (1 + playerNeedWeightsBase[i]) : 0;
-                    }
-
-                    let sumWeights = 0;
-                    for (let i = 0; i < choiceWeights.length; i++) sumWeights += choiceWeights[i];
-                    if (sumWeights <= 0) break;
-
-                    const receiver = weightedRandomPlayer(rng, choiceWeights);
-                    const capacityForReceiver = capacities[receiver];
-
-                    if (capacityForReceiver <= 0.01) break;
-
-                    const give = Math.min(remainingToAllocate, capacityForReceiver);
-                    if (give <= 0) break;
-
+                  // cap per-game max share for this player
+                  const projectedTotal = totalPayout + boxPay;
+                  const playerCap = CAP_FRACTION * projectedTotal;
+                  let capacity = playerCap - perPlayerRewards[p];
+                  if (capacity < 0) capacity = 0;
+                  let give = Math.min(boxPay, capacity, poolBalance);
+                  give = Math.floor(give); // integer
+                  if (give > 0) {
                     poolBalance -= give;
-                    perPlayerRewards[receiver] += give;
-                    leaderboardScores[receiver] += give;
+                    perPlayerRewards[p] += give;
+                    leaderboardScores[p] += give;
                     totalPayout += give;
-                    allocatedTotal += give;
-                    remainingToAllocate -= give;
+                    remainingReward[toPos] -= give;
+                    if (remainingReward[toPos] < 0) remainingReward[toPos] = 0;
 
+                    reward += give;
                     events.push({
                       boxIndex: toPos,
                       rewardGiven: give,
-                      poolBefore: poolBeforeLocal,
+                      poolBefore: poolBalance + give,
                       poolAfter: poolBalance,
-                      playerIndex: receiver
+                      playerIndex: p
                     });
-                    poolBeforeLocal = poolBalance;
-
-                    reward += give;
                   }
-
-                  remainingReward[toPos] -= allocatedTotal;
-                  if (remainingReward[toPos] < 0) remainingReward[toPos] = 0;
                 }
               }
 
               const noteFull = diceReason + snlNote;
-
               diceStepsByPlayer[p].push({
                 turn: turnCounter++,
                 randomDice,
@@ -1081,34 +750,26 @@
                 note: noteFull
               });
 
-              if (toPos >= 100) {
-                gameOver = true;
-                break;
-              }
+              if (toPos >= 100) { gameOver = true; break; }
             }
           }
 
           const perPlayerNet = perPlayerRewards.map(r => r - ENTRY_FEE);
-          const playerNet = perPlayerNet.reduce((a, b) => a + b, 0);
+          const playerNet = perPlayerNet.reduce((a,b) => a + b, 0);
 
-          // streak updates using thresholds
+          // update streaks
           for (let p = 0; p < N_PLAYERS; p++) {
             const net = perPlayerNet[p];
             if (net <= LOSS_GAME_NET_THRESHOLD) {
-              lossStreak[p] += 1;
-              winStreak[p] = 0;
+              lossStreak[p] += 1; winStreak[p] = 0;
             } else if (net >= BIG_WIN_NET_THRESHOLD) {
-              winStreak[p] += 1;
-              lossStreak[p] = 0;
+              winStreak[p] += 1;  lossStreak[p] = 0;
             } else {
-              lossStreak[p] = 0;
-              winStreak[p]  = 0;
+              lossStreak[p] = 0;  winStreak[p] = 0;
             }
           }
 
-          // admin net (system perspective) – LB already cut from player share
           let adminNet = totalEntry - totalPayout;
-
           totalPlayerNet += playerNet;
           totalAdminNet  += adminNet;
 
@@ -1150,8 +811,7 @@
         };
       }
 
-      let pool = 0;
-      let house = 0;
+      let pool = 0, house = 0;
       const summaries = [];
       const batches = [];
 
@@ -1172,22 +832,20 @@
           leaderboardPoolAfter: leaderboardPool
         });
 
-        batches.push({
-          gamesCount: nGames,
-          games: res.games
-        });
+        batches.push({ gamesCount: nGames, games: res.games });
       }
 
       return { summaries, batches, leaderboard: { pool: leaderboardPool, scores: leaderboardScores } };
     }
 
-    const runBtnEl         = document.getElementById('runBtn');
-    const resetBtn         = document.getElementById('resetBtn');
-    const exportBtn        = document.getElementById('exportBtn');
-    const statusEl         = document.getElementById('status');
+    /* ---------- UI wiring ---------- */
+    const runBtnEl  = document.getElementById('runBtn');
+    const resetBtn  = document.getElementById('resetBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const statusEl  = document.getElementById('status');
     const resultsContainer = document.getElementById('resultsContainer');
-    const batchSelect      = document.getElementById('batchSelect');
-    const detailContainer  = document.getElementById('detailContainer');
+    const batchSelect = document.getElementById('batchSelect');
+    const detailContainer = document.getElementById('detailContainer');
     const leaderboardContainer = document.getElementById('leaderboardContainer');
 
     let lastResult = null;
@@ -1196,74 +854,46 @@
     let balanceChart   = null;
 
     function parseConfigFromUI() {
-      const entryFee   = Number(document.getElementById('entryFee').value);
-      const numPlayers = Number(document.getElementById('numPlayers').value);
-
-      const baseAdminPct = Number(document.getElementById('baseAdminPct').value);
-      const midAdminPct  = Number(document.getElementById('midAdminPct').value);
-      const highAdminPct = Number(document.getElementById('highAdminPct').value);
-
-      const midLossMultiple  = Number(document.getElementById('midLossMultiple').value);
-      const highLossMultiple = Number(document.getElementById('highLossMultiple').value);
-
-      const lossStreakTrigger = Number(document.getElementById('lossStreakTrigger').value);
-      const winStreakTrigger  = Number(document.getElementById('winStreakTrigger').value);
-      const lossGameMultiple  = Number(document.getElementById('lossGameMultiple').value);
-      const bigWinMultiple    = Number(document.getElementById('bigWinMultiple').value);
-
-      const lbReservePct = Number(document.getElementById('lbReservePct').value);
-      const lbTopN       = Number(document.getElementById('lbTopN').value);
+      const val = id => Number(document.getElementById(id).value);
+      const entryFee   = val('entryFee');
+      const numPlayers = val('numPlayers');
+      const baseAdminPct = val('baseAdminPct');
+      const midAdminPct  = val('midAdminPct');
+      const highAdminPct = val('highAdminPct');
+      const midLossMultiple  = val('midLossMultiple');
+      const highLossMultiple = val('highLossMultiple');
+      const lossStreakTrigger = val('lossStreakTrigger');
+      const winStreakTrigger  = val('winStreakTrigger');
+      const lossGameMultiple  = val('lossGameMultiple');
+      const bigWinMultiple    = val('bigWinMultiple');
+      const lbReservePct = val('lbReservePct');
+      const lbTopN       = val('lbTopN');
       const lbPrizeStr   = document.getElementById('lbPrizePercents').value;
-
       const gameCountsStr = document.getElementById('gameCounts').value;
       const adaptiveRtp   = document.getElementById('adaptiveRtp').checked;
 
-      const gameCounts = gameCountsStr
-        .split(',')
+      const gameCounts = gameCountsStr.split(',')
         .map(s => Number(s.trim()))
         .filter(n => !isNaN(n) && n > 0);
 
       if (!entryFee || entryFee <= 0) throw new Error("Entry fee must be > 0");
-      if (!numPlayers || numPlayers < 2 || numPlayers > 4) throw new Error("Players per game must be between 2 and 4");
-      if (!gameCounts.length) throw new Error("Please specify at least one valid game count");
+      if (numPlayers < 2 || numPlayers > 4) throw new Error("Players per game must be 2–4");
+      if (!gameCounts.length) throw new Error("Game counts missing");
 
-      if (baseAdminPct < 0 || baseAdminPct > 90) throw new Error("Base Admin % must be between 0 and 90");
-      if (midAdminPct  < 0 || midAdminPct  > 90) throw new Error("Medium-Loss Admin % must be between 0 and 90");
-      if (highAdminPct < 0 || highAdminPct > 90) throw new Error("High-Loss Admin % must be between 0 and 90");
+      if (highLossMultiple < midLossMultiple) throw new Error("High-Loss threshold ≥ Medium-Loss required");
 
-      if (highLossMultiple < midLossMultiple) throw new Error("High-Loss threshold must be ≥ Medium-Loss threshold");
-
-      if (!lossStreakTrigger || lossStreakTrigger < 1) throw new Error("Loss Streak Size must be ≥ 1");
-      if (!winStreakTrigger  || winStreakTrigger  < 1) throw new Error("Win Streak Size must be ≥ 1");
-      if (!lossGameMultiple  || lossGameMultiple  <= 0) throw new Error("Loss Game Threshold must be > 0");
-      if (!bigWinMultiple    || bigWinMultiple    <= 0) throw new Error("Big Win Threshold must be > 0");
-
-      if (lbReservePct < 0 || lbReservePct > 100) throw new Error("Leaderboard Reserve % must be between 0 and 100");
-      if (!lbTopN || lbTopN < 1 || lbTopN > 10) throw new Error("Leaderboard Top N must be between 1 and 10");
-
-      const lbPrizePercents = lbPrizeStr
-        .split(',')
+      const lbPrizePercents = lbPrizeStr.split(',')
         .map(s => Number(s.trim()))
         .filter(n => !isNaN(n) && n >= 0);
-
-      if (!lbPrizePercents.length) throw new Error("Leaderboard prize % list is invalid");
+      if (!lbPrizePercents.length) throw new Error("LB prize % invalid");
 
       return {
-        entryFee,
-        numPlayers,
-        adaptiveRtp,
-        baseAdminPct,
-        midAdminPct,
-        highAdminPct,
-        midLossMultiple,
-        highLossMultiple,
-        lossStreakTrigger,
-        winStreakTrigger,
-        lossGameMultiple,
-        bigWinMultiple,
-        lbReservePct,
-        lbTopN,
-        lbPrizePercents,
+        entryFee, numPlayers, adaptiveRtp,
+        baseAdminPct, midAdminPct, highAdminPct,
+        midLossMultiple, highLossMultiple,
+        lossStreakTrigger, winStreakTrigger,
+        lossGameMultiple, bigWinMultiple,
+        lbReservePct, lbTopN, lbPrizePercents,
         gameCounts
       };
     }
@@ -1274,39 +904,32 @@
         exportBtn.disabled = true;
         return;
       }
-
       let html = `
-        <table>
-          <thead>
-            <tr>
-              <th>Games Simulated</th>
-              <th>Total Admin Net Profit</th>
-              <th>Total Player Net Profit</th>
-              <th>Avg Admin Profit / Game</th>
-              <th>Avg Player Net / Game</th>
-              <th>Pool Balance After Batch</th>
-              <th>House Balance After Batch</th>
-              <th>Leaderboard Pool After Batch</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      summaries.forEach(row => {
-        html += `
+      <table>
+        <thead>
           <tr>
-            <td>${row.games.toLocaleString()}</td>
-            <td>${row.totalAdminNet.toFixed(2)}</td>
-            <td>${row.totalPlayerNet.toFixed(2)}</td>
-            <td>${row.avgAdminPerGame.toFixed(2)}</td>
-            <td>${row.avgPlayerPerGame.toFixed(2)}</td>
-            <td>${row.poolAfter.toFixed(2)}</td>
-            <td>${row.houseAfter.toFixed(2)}</td>
-            <td>${(row.leaderboardPoolAfter ?? 0).toFixed(2)}</td>
+            <th>Games</th>
+            <th>Total Admin Net</th>
+            <th>Total Player Net</th>
+            <th>Avg Admin/Game</th>
+            <th>Avg Player/Game</th>
+            <th>Pool After</th>
+            <th>House After</th>
+            <th>LB Pool After</th>
           </tr>
-        `;
+        </thead><tbody>`;
+      summaries.forEach(s => {
+        html += `<tr>
+          <td>${s.games}</td>
+          <td>${s.totalAdminNet.toFixed(2)}</td>
+          <td>${s.totalPlayerNet.toFixed(2)}</td>
+          <td>${s.avgAdminPerGame.toFixed(2)}</td>
+          <td>${s.avgPlayerPerGame.toFixed(2)}</td>
+          <td>${s.poolAfter.toFixed(2)}</td>
+          <td>${s.houseAfter.toFixed(2)}</td>
+          <td>${(s.leaderboardPoolAfter||0).toFixed(2)}</td>
+        </tr>`;
       });
-
       html += `</tbody></table>`;
       resultsContainer.innerHTML = html;
       exportBtn.disabled = false;
@@ -1314,16 +937,14 @@
 
     function updateCharts(summaries) {
       if (!summaries.length) return;
-
-      const labels    = summaries.map(s => s.games.toString());
+      const labels = summaries.map(s => s.games.toString());
       const avgAdmin  = summaries.map(s => s.avgAdminPerGame);
       const avgPlayer = summaries.map(s => s.avgPlayerPerGame);
       const poolAfter = summaries.map(s => s.poolAfter);
-      const houseAfter = summaries.map(s => s.houseAfter);
+      const houseAfter= summaries.map(s => s.houseAfter);
 
       const avgCtx = document.getElementById('avgProfitChart').getContext('2d');
       const balCtx = document.getElementById('balanceChart').getContext('2d');
-
       if (avgProfitChart) avgProfitChart.destroy();
       if (balanceChart)   balanceChart.destroy();
 
@@ -1332,17 +953,14 @@
         data: {
           labels,
           datasets: [
-            { label: 'Avg Admin Profit / Game', data: avgAdmin },
-            { label: 'Avg Player Net / Game',  data: avgPlayer }
+            { label: 'Avg Admin/Game', data: avgAdmin },
+            { label: 'Avg Player/Game', data: avgPlayer }
           ]
         },
         options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: '#e5e7eb' } } },
-          scales: {
-            x: { ticks: { color: '#e5e7eb' } },
-            y: { ticks: { color: '#e5e7eb' } }
-          }
+          responsive:true,
+          plugins:{ legend:{ labels:{ color:'#e5e7eb' } } },
+          scales:{ x:{ ticks:{ color:'#e5e7eb'} }, y:{ ticks:{ color:'#e5e7eb'} } }
         }
       });
 
@@ -1351,17 +969,14 @@
         data: {
           labels,
           datasets: [
-            { label: 'Pool Balance After Batch',  data: poolAfter },
-            { label: 'House Balance After Batch', data: houseAfter }
+            { label:'Pool After',  data: poolAfter },
+            { label:'House After', data: houseAfter }
           ]
         },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: '#e5e7eb' } } },
-          scales: {
-            x: { ticks: { color: '#e5e7eb' } },
-            y: { ticks: { color: '#e5e7eb' } }
-          }
+        options:{
+          responsive:true,
+          plugins:{ legend:{ labels:{ color:'#e5e7eb'} } },
+          scales:{ x:{ ticks:{ color:'#e5e7eb'} }, y:{ ticks:{ color:'#e5e7eb'} } }
         }
       });
     }
@@ -1373,92 +988,56 @@
         batchSelect.innerHTML = '<option value="">No data yet</option>';
         return;
       }
-      summaries.forEach((s, idx) => {
-        const opt = document.createElement('option');
-        opt.value = String(idx);
-        opt.textContent = `${s.games} games`;
-        batchSelect.appendChild(opt);
+      summaries.forEach((s,idx)=>{
+        const o=document.createElement('option');
+        o.value=String(idx); o.textContent=`${s.games} games`;
+        batchSelect.appendChild(o);
       });
     }
 
     function renderBatchDetail(index) {
-      if (!lastResult || !lastResult.batches || index == null || index === '') {
-        detailContainer.innerHTML = `<p class="small-text">Select a batch to view details.</p>`;
-        return;
+      if (!lastResult || !lastResult.batches || index==null || index==='') {
+        detailContainer.innerHTML = `<p class="small-text">Select a batch.</p>`; return;
       }
       const batch = lastResult.batches[Number(index)];
-      if (!batch) {
-        detailContainer.innerHTML = `<p class="small-text">No data for this batch.</p>`;
-        return;
-      }
-
+      if (!batch) { detailContainer.innerHTML = `<p class="small-text">No data.</p>`; return; }
       const games = batch.games;
-      if (!games.length) {
-        detailContainer.innerHTML = `<p class="small-text">No games in this batch.</p>`;
-        return;
-      }
+      if (!games.length) { detailContainer.innerHTML = `<p class="small-text">No games.</p>`; return; }
 
-      const N_PLAYERS = lastConfig ? lastConfig.numPlayers : 0;
-
-      function fmtReward(rewards, idx) {
-        if (!N_PLAYERS || idx >= N_PLAYERS) return '-';
-        const v = rewards && typeof rewards[idx] === 'number' ? rewards[idx] : 0;
-        return v.toFixed(2);
-      }
+      const N = lastConfig ? lastConfig.numPlayers : 0;
+      const fmt = (r,i)=> (i<N && r && typeof r[i]==='number') ? r[i].toFixed(2) : '-';
 
       let html = `
-        <div class="small-text" style="margin-bottom:6px;">Showing ${games.length} games. Click a <strong>Game #</strong> to visualise.</div>
-        <div style="max-height:260px; overflow:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Game #</th>
-              <th>Total Entry</th>
-              <th>Total Payout</th>
-              <th>P1 Reward</th>
-              <th>P2 Reward</th>
-              <th>P3 Reward</th>
-              <th>P4 Reward</th>
-              <th>Admin %</th>
-              <th>Admin Net (after game)</th>
-              <th>LB Reserve (players)</th>
-              <th>Pool After Game</th>
-              <th>House After Game</th>
-              <th>Scale</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      games.forEach((g, idx) => {
-        const rewards = g.perPlayerRewards || [];
-        html += `
-          <tr>
-            <td>
-              <button class="game-link-btn" data-game-index="${idx}">
-                ${g.gameNo}
-              </button>
-            </td>
-            <td>${g.totalEntry.toFixed(2)}</td>
-            <td>${g.totalPayout.toFixed(2)}</td>
-            <td>${fmtReward(rewards,0)}</td>
-            <td>${fmtReward(rewards,1)}</td>
-            <td>${fmtReward(rewards,2)}</td>
-            <td>${fmtReward(rewards,3)}</td>
-            <td>${(g.adminPctUsed ?? 0).toFixed(1)}</td>
-            <td>${g.adminNet.toFixed(2)}</td>
-            <td>${(g.lbContribution ?? 0).toFixed(2)}</td>
-            <td>${g.poolAfter.toFixed(2)}</td>
-            <td>${g.houseAfter.toFixed(2)}</td>
-            <td>${g.globalScale.toFixed(3)}</td>
-          </tr>
-        `;
+      <div class="small-text">Showing ${games.length} games. Click Game #.</div>
+      <div style="max-height:260px;overflow:auto;">
+      <table><thead>
+        <tr>
+          <th>Game #</th>
+          <th>Total Entry</th>
+          <th>Total Payout</th>
+          <th>P1 Reward</th><th>P2 Reward</th><th>P3 Reward</th><th>P4 Reward</th>
+          <th>Admin %</th><th>Admin Net</th>
+          <th>LB Reserve</th><th>Pool After</th><th>House After</th><th>Scale</th>
+        </tr></thead><tbody>`;
+      games.forEach((g,idx)=>{
+        const r=g.perPlayerRewards||[];
+        html += `<tr>
+          <td><button class="game-link-btn" data-game-index="${idx}">${g.gameNo}</button></td>
+          <td>${g.totalEntry.toFixed(2)}</td>
+          <td>${g.totalPayout.toFixed(2)}</td>
+          <td>${fmt(r,0)}</td><td>${fmt(r,1)}</td><td>${fmt(r,2)}</td><td>${fmt(r,3)}</td>
+          <td>${(g.adminPctUsed||0).toFixed(1)}</td>
+          <td>${g.adminNet.toFixed(2)}</td>
+          <td>${(g.lbContribution||0).toFixed(2)}</td>
+          <td>${g.poolAfter.toFixed(2)}</td>
+          <td>${g.houseAfter.toFixed(2)}</td>
+          <td>${g.globalScale.toFixed(3)}</td>
+        </tr>`;
       });
-
       html += `</tbody></table></div>
-               <div id="gameVisual" class="small-text" style="margin-top:10px;">
-                 Click a Game # above to see board visual and per-player dice simulation.
-               </div>`;
+        <div id="gameVisual" class="small-text" style="margin-top:10px;">
+          Click a Game # to see board and dice paths.
+        </div>`;
       detailContainer.innerHTML = html;
     }
 
@@ -1469,248 +1048,156 @@
       const game = batch.games[gameIndex];
       if (!game) return;
 
-      const events = game.events || [];
-      const eventMap = {};
-      events.forEach(ev => {
-        // keep last event per box for grid
-        eventMap[ev.boxIndex] = ev;
-      });
+      const events = game.events||[];
+      const eventMap={};
+      events.forEach(ev=>{ eventMap[ev.boxIndex]=ev; });
 
-      let perPlayerSummary = '';
+      let perPlayerSummary='';
       if (lastConfig && game.perPlayerRewards) {
-        const N = lastConfig.numPlayers;
-        const labels = [];
-        for (let i = 0; i < N; i++) {
-          const val = game.perPlayerRewards[i] || 0;
-          const net = game.perPlayerNet ? game.perPlayerNet[i] || 0 : 0;
+        const N=lastConfig.numPlayers;
+        const labels=[];
+        for(let i=0;i<N;i++){
+          const val=game.perPlayerRewards[i]||0;
+          const net=game.perPlayerNet?game.perPlayerNet[i]||0:0;
           labels.push(`P${i+1}: reward ${val.toFixed(2)}, net ${net.toFixed(2)}`);
         }
-        perPlayerSummary = ' | ' + labels.join(' | ');
+        perPlayerSummary=' | '+labels.join(' | ');
       }
 
       let html = `
         <div class="game-visual-header">
-          <strong>Game #${game.gameNo}</strong> — Total Entry: ${game.totalEntry.toFixed(2)},
-          Total Payout: ${game.totalPayout.toFixed(2)}, Admin Net: ${game.adminNet.toFixed(2)}, Player Net (all): ${game.playerNet.toFixed(2)}
-          ${perPlayerSummary}
-          <br/>Admin % used: ${(game.adminPctUsed ?? 0).toFixed(1)}%, Scale: ${game.globalScale.toFixed(3)}, Pool after game: ${game.poolAfter.toFixed(2)}, LB Reserve this game (players): ${(game.lbContribution ?? 0).toFixed(2)}
+          <strong>Game #${game.gameNo}</strong> — Entry: ${game.totalEntry.toFixed(2)},
+          Payout: ${game.totalPayout.toFixed(2)}, Admin Net: ${game.adminNet.toFixed(2)},
+          Player Net: ${game.playerNet.toFixed(2)}${perPlayerSummary}
+          <br/>Admin %: ${(game.adminPctUsed||0).toFixed(1)}%, Scale: ${game.globalScale.toFixed(3)},
+          Pool after: ${game.poolAfter.toFixed(2)}, LB Reserve: ${(game.lbContribution||0).toFixed(2)}
         </div>
-        <div class="board-grid">
-      `;
+        <div class="board-grid">`;
 
-      for (let box = 1; box <= 100; box++) {
-        const ev = eventMap[box];
+      for(let box=1;box<=100;box++){
+        const ev=eventMap[box];
+        let classes='board-cell';
+        let tag=''; let arrow='';
 
-        let classes = 'board-cell';
-        let tagText = '';
-        let arrowChar = '';
+        const liStart=LADDERS.findIndex(l=>l.start===box);
+        const liEnd  =LADDERS.findIndex(l=>l.end===box);
+        const siStart=SNAKES.findIndex(s=>s.start===box);
+        const siEnd  =SNAKES.findIndex(s=>s.end===box);
 
-        const ladderIdxStart = LADDERS.findIndex(l => l.start === box);
-        const ladderIdxEnd   = LADDERS.findIndex(l => l.end === box);
-        const snakeIdxStart  = SNAKES.findIndex(s => s.start === box);
-        const snakeIdxEnd    = SNAKES.findIndex(s => s.end === box);
+        if (liStart>=0){ classes+=' ladder-start'; tag=`L${liStart+1}-Start`; arrow='↑'; }
+        else if(liEnd>=0){ classes+=' ladder-end'; tag=`L${liEnd+1}-End`; arrow='▲'; }
+        if (siStart>=0){ classes+=' snake-start'; tag=`S${siStart+1}-Start`; arrow='↓'; }
+        else if(siEnd>=0){ classes+=' snake-end'; tag=`S${siEnd+1}-End`; arrow='▼'; }
 
-        if (ladderIdxStart >= 0) {
-          classes += ' ladder-start';
-          tagText = `L${ladderIdxStart + 1}-Start`;
-          arrowChar = '↑';
-        } else if (ladderIdxEnd >= 0) {
-          classes += ' ladder-end';
-          tagText = `L${ladderIdxEnd + 1}-End`;
-          arrowChar = '▲';
-        }
+        if (ev) classes+=' hit';
 
-        if (snakeIdxStart >= 0) {
-          classes += ' snake-start';
-          tagText = `S${snakeIdxStart + 1}-Start`;
-          arrowChar = '↓';
-        } else if (snakeIdxEnd >= 0) {
-          classes += ' snake-end';
-          tagText = `S${snakeIdxEnd + 1}-End`;
-          arrowChar = '▼';
-        }
-
-        if (ev) {
-          classes += ' hit';
-        }
-
-        html += `<div class="${classes}">`;
-        html += `${box}`;
-        if (arrowChar) {
-          html += `<span class="board-arrow">${arrowChar}</span>`;
-        }
-        if (tagText) {
-          html += `<span class="board-tag">${tagText}</span>`;
-        }
-        if (ev) {
-          html += `<span>+${ev.rewardGiven}</span>`;
-        }
-        html += `</div>`;
+        html += `<div class="${classes}">
+          ${box}
+          ${arrow?`<span class="board-arrow">${arrow}</span>`:''}
+          ${tag?`<span class="board-tag">${tag}</span>`:''}
+          ${ev?`<span>+${ev.rewardGiven}</span>`:''}
+        </div>`;
       }
-
       html += `</div>`;
 
-      // Timeline of reward hits
       html += `<div class="timeline">`;
-      if (events.length === 0) {
-        html += `<div class="timeline-item">No reward hits in this game.</div>`;
+      if (!events.length){
+        html += `<div class="timeline-item">No rewards in this game.</div>`;
       } else {
-        events.forEach((ev, idx) => {
-          const pid = typeof ev.playerIndex === 'number' ? `P${ev.playerIndex + 1}: ` : '';
-          html += `
-            <div class="timeline-item">
-              Step ${idx + 1}: ${pid}Box ${ev.boxIndex} → +${ev.rewardGiven}
-              (Pool: ${ev.poolBefore.toFixed(0)} → ${ev.poolAfter.toFixed(0)})
-            </div>
-          `;
+        events.forEach((ev,idx)=>{
+          const pid = (typeof ev.playerIndex==='number') ? `P${ev.playerIndex+1}: ` : '';
+          html += `<div class="timeline-item">
+            Step ${idx+1}: ${pid}Box ${ev.boxIndex} → +${ev.rewardGiven}
+            (Pool: ${ev.poolBefore.toFixed(0)} → ${ev.poolAfter.toFixed(0)})
+          </div>`;
         });
       }
       html += `</div>`;
 
-      // Dice path per player
+      // dice paths
       html += `<div class="dice-path">`;
-
-      if (!lastConfig || !game.diceSteps) {
-        html += `<div class="timeline-item">No dice path data.</div>`;
+      if (!lastConfig || !game.diceSteps){
+        html += `<div class="timeline-item">No dice data.</div>`;
       } else {
-        const N = lastConfig.numPlayers;
-
-        for (let p = 0; p < N; p++) {
-          const steps = game.diceSteps[p] || [];
+        const N=lastConfig.numPlayers;
+        for(let p=0;p<N;p++){
+          const steps=game.diceSteps[p]||[];
           if (!steps.length) continue;
-
-          html += `
-            <div class="dice-player-block">
-              <div class="dice-player-title">Dice Path for Player P${p + 1}</div>
-              <table class="dice-table">
-                <thead>
-                  <tr>
-                    <th>Turn</th>
-                    <th>Random Dice</th>
-                    <th>Final Dice</th>
-                    <th>From Box</th>
-                    <th>To Box</th>
-                    <th>Reward Won</th>
-                    <th>Note</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-
-          steps.forEach(step => {
-            html += `
-              <tr>
-                <td>${step.turn}</td>
-                <td>${step.randomDice}</td>
-                <td>${step.finalDice}</td>
-                <td>${step.from}</td>
-                <td>${step.to}</td>
-                <td>${step.reward.toFixed(2)}</td>
-                <td style="text-align:left;">${step.note}</td>
-              </tr>
-            `;
+          let totalReward=0;
+          html += `<div class="dice-player-block">
+            <div class="dice-player-title">Dice Path for Player P${p+1}</div>
+            <table class="dice-table">
+              <thead><tr>
+                <th>Turn</th><th>Random Dice</th><th>Final Dice</th>
+                <th>From</th><th>To</th><th>Reward</th><th>Note</th>
+              </tr></thead><tbody>`;
+          steps.forEach(s=>{
+            totalReward+=s.reward;
+            html += `<tr>
+              <td>${s.turn}</td><td>${s.randomDice}</td><td>${s.finalDice}</td>
+              <td>${s.from}</td><td>${s.to}</td>
+              <td>${s.reward.toFixed(0)}</td>
+              <td style="text-align:left;">${s.note}</td>
+            </tr>`;
           });
-
-          html += `
-                </tbody>
-              </table>
-            </div>
-          `;
+          html += `<tr class="dice-total-row">
+            <td colspan="5" style="text-align:right;">Total Reward</td>
+            <td>${totalReward.toFixed(0)}</td><td></td>
+          </tr>`;
+          html += `</tbody></table></div>`;
         }
       }
-
       html += `</div>`;
 
-      const gv = document.getElementById('gameVisual');
+      const gv=document.getElementById('gameVisual');
       if (gv) gv.innerHTML = html;
     }
 
     function renderLeaderboard(result, config) {
       if (!result || !result.leaderboard || !config) {
-        leaderboardContainer.innerHTML = `<p class="small-text">No leaderboard data.</p>`;
-        return;
+        leaderboardContainer.innerHTML=`<p class="small-text">No leaderboard data.</p>`; return;
       }
-      const pool = result.leaderboard.pool || 0;
-      const scores = result.leaderboard.scores || [];
+      const pool = result.leaderboard.pool||0;
+      const scores = result.leaderboard.scores||[];
       const N = scores.length;
-
-      if (!N || pool <= 0) {
-        leaderboardContainer.innerHTML = `
-          <p class="small-text">
-            Leaderboard pool: <strong>${pool.toFixed(2)}</strong>. Not enough data or pool is zero.
-          </p>`;
+      if (!N || pool<=0){
+        leaderboardContainer.innerHTML=`<p class="small-text">Leaderboard pool: ${pool.toFixed(2)}.</p>`;
         return;
       }
-
       const lbTopN = Math.min(config.lbTopN, N);
-      const percList = config.lbPrizePercents;
-      const perc = [];
-      for (let i = 0; i < lbTopN; i++) {
-        perc[i] = typeof percList[i] === 'number' ? percList[i] : 0;
-      }
+      const percList=config.lbPrizePercents;
+      const perc=[]; for(let i=0;i<lbTopN;i++) perc[i]=typeof percList[i]==='number'?percList[i]:0;
 
-      const players = scores.map((score, idx) => ({ idx, score }));
-      players.sort((a, b) => b.score - a.score);
-
-      let totalPercUsed = 0;
-      perc.forEach(p => { totalPercUsed += p; });
-      const effectivePercFactor = Math.min(totalPercUsed, 100) / 100;
-      const totalPrizeDistributed = pool * effectivePercFactor;
-      const remaining = pool - totalPrizeDistributed;
-
+      const players=scores.map((s,idx)=>({idx,score:s})).sort((a,b)=>b.score-a.score);
       let html = `
-        <p class="small-text">
-          Leaderboard Pool Balance: <strong>${pool.toFixed(2)}</strong><br/>
-          Prize Distributed (Top ${lbTopN}): <strong>${totalPrizeDistributed.toFixed(2)}</strong> &nbsp; | &nbsp;
-          Remaining in Pool: <strong>${remaining.toFixed(2)}</strong><br/>
-          Ranking based on <strong>total winnings</strong> across all simulated games.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Total Winnings</th>
-              <th>Prize %</th>
-              <th>Prize Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      for (let i = 0; i < lbTopN; i++) {
-        const p = players[i];
-        const pr = pool * (perc[i] / 100);
-        html += `
-          <tr>
-            <td>${i + 1}</td>
-            <td>P${p.idx + 1}</td>
-            <td>${p.score.toFixed(2)}</td>
-            <td>${perc[i].toFixed(1)}%</td>
-            <td>${pr.toFixed(2)}</td>
-          </tr>
-        `;
+      <p class="small-text">
+        LB Pool: <strong>${pool.toFixed(2)}</strong>
+      </p>
+      <table><thead><tr>
+        <th>Rank</th><th>Player</th><th>Total Winnings</th><th>Prize %</th><th>Prize</th>
+      </tr></thead><tbody>`;
+      for(let i=0;i<lbTopN;i++){
+        const p=players[i];
+        const pr=pool*(perc[i]/100);
+        html += `<tr>
+          <td>${i+1}</td><td>P${p.idx+1}</td>
+          <td>${p.score.toFixed(2)}</td>
+          <td>${perc[i].toFixed(1)}%</td>
+          <td>${pr.toFixed(2)}</td>
+        </tr>`;
       }
-
       html += `</tbody></table>`;
       leaderboardContainer.innerHTML = html;
     }
 
-    function exportSummaryCSV(summaries) {
-      if (!summaries.length) return;
-
-      const header = [
-        'Games_Simulated',
-        'Total_Admin_Net_Profit',
-        'Total_Player_Net_Profit',
-        'Average_Admin_Profit_per_Game',
-        'Average_Player_Net_per_Game',
-        'PoolBalance_After_Batch',
-        'HouseBalance_After_Batch',
-        'LeaderboardPool_After_Batch'
+    function exportSummaryCSV(summaries){
+      if(!summaries.length) return;
+      const header=[
+        'Games_Simulated','Total_Admin_Net','Total_Player_Net',
+        'Avg_Admin_per_Game','Avg_Player_per_Game',
+        'PoolAfter','HouseAfter','LBPoolAfter'
       ];
-
-      const rows = summaries.map(s => [
+      const rows=summaries.map(s=>[
         s.games,
         s.totalAdminNet.toFixed(2),
         s.totalPlayerNet.toFixed(2),
@@ -1718,165 +1205,90 @@
         s.avgPlayerPerGame.toFixed(2),
         s.poolAfter.toFixed(2),
         s.houseAfter.toFixed(2),
-        (s.leaderboardPoolAfter ?? 0).toFixed(2)
+        (s.leaderboardPoolAfter||0).toFixed(2)
       ]);
-
-      let csv = header.join(',') + '\n';
-      rows.forEach(r => { csv += r.join(',') + '\n'; });
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'chances_game_economy_summary.csv';
-      a.click();
+      let csv = header.join(',')+'\n';
+      rows.forEach(r=>{ csv += r.join(',')+'\n'; });
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download='snl_economy_summary.csv'; a.click();
       URL.revokeObjectURL(url);
     }
 
     runBtnEl.addEventListener('click', () => {
-      statusEl.innerHTML = '';
-      resultsContainer.innerHTML = '';
-      detailContainer.innerHTML = '<p class="small-text">Running simulation...</p>';
-      leaderboardContainer.innerHTML = '<p class="small-text">Running simulation...</p>';
-      try {
-        const config = parseConfigFromUI();
-        lastConfig = config;
-        runBtnEl.disabled = true;
-        exportBtn.disabled = true;
-        statusEl.innerHTML = '<span class="spinner"></span> Running simulation...';
-
-        setTimeout(() => {
-          lastResult = runSimulation(config);
+      statusEl.textContent=''; resultsContainer.innerHTML='';
+      detailContainer.innerHTML='<p class="small-text">Running...</p>';
+      leaderboardContainer.innerHTML='<p class="small-text">Running...</p>';
+      try{
+        const config=parseConfigFromUI();
+        lastConfig=config;
+        runBtnEl.disabled=true; exportBtn.disabled=true;
+        statusEl.innerHTML='<span class="spinner"></span> Running simulation...';
+        setTimeout(()=>{
+          lastResult=runSimulation(config);
           renderSummaryTable(lastResult.summaries);
           updateCharts(lastResult.summaries);
           populateBatchSelect(lastResult);
-          renderBatchDetail(batchSelect.value || '0');
-          renderLeaderboard(lastResult, lastConfig);
-          statusEl.textContent = 'Done ✔';
-          runBtnEl.disabled = false;
-        }, 20);
-      } catch (err) {
-        statusEl.textContent = '';
-        resultsContainer.innerHTML = `<p class="error">Error: ${err.message}</p>`;
-        detailContainer.innerHTML = `<p class="small-text">Fix the error above and re-run.</p>`;
-        leaderboardContainer.innerHTML = `<p class="small-text">Fix the error and re-run to see leaderboard.</p>`;
+          renderBatchDetail(batchSelect.value||'0');
+          renderLeaderboard(lastResult,lastConfig);
+          statusEl.textContent='Done ✔';
+          runBtnEl.disabled=false;
+        },20);
+      }catch(err){
+        statusEl.textContent='';
+        resultsContainer.innerHTML=`<p class="error">Error: ${err.message}</p>`;
+        detailContainer.innerHTML='<p class="small-text">Fix error and re-run.</p>';
+        leaderboardContainer.innerHTML='<p class="small-text">Fix error and re-run.</p>';
       }
     });
 
-    resetBtn.addEventListener('click', () => {
-      document.getElementById('entryFee').value       = 200;
-      document.getElementById('numPlayers').value     = 2;
-      document.getElementById('baseAdminPct').value   = 50;
-      document.getElementById('midAdminPct').value    = 30;
-      document.getElementById('highAdminPct').value   = 10;
-      document.getElementById('midLossMultiple').value  = 3;
-      document.getElementById('highLossMultiple').value = 6;
-      document.getElementById('lossStreakTrigger').value = 3;
-      document.getElementById('winStreakTrigger').value  = 3;
-      document.getElementById('lossGameMultiple').value  = 0.5;
-      document.getElementById('bigWinMultiple').value    = 1.5;
-      document.getElementById('lbReservePct').value   = 10;
-      document.getElementById('lbTopN').value         = 3;
-      document.getElementById('lbPrizePercents').value = '50,30,20';
-      document.getElementById('gameCounts').value     = '100,500,1000,5000';
-      document.getElementById('adaptiveRtp').checked  = true;
+    resetBtn.addEventListener('click',()=>{
+      document.getElementById('entryFee').value=200;
+      document.getElementById('numPlayers').value=2;
+      document.getElementById('baseAdminPct').value=50;
+      document.getElementById('midAdminPct').value=30;
+      document.getElementById('highAdminPct').value=10;
+      document.getElementById('midLossMultiple').value=3;
+      document.getElementById('highLossMultiple').value=6;
+      document.getElementById('lossStreakTrigger').value=3;
+      document.getElementById('winStreakTrigger').value=3;
+      document.getElementById('lossGameMultiple').value=0.5;
+      document.getElementById('bigWinMultiple').value=1.5;
+      document.getElementById('lbReservePct').value=10;
+      document.getElementById('lbTopN').value=3;
+      document.getElementById('lbPrizePercents').value='50,30,20';
+      document.getElementById('gameCounts').value='100,500,1000,5000';
+      document.getElementById('adaptiveRtp').checked=true;
 
-      resultsContainer.innerHTML = `<p class="small-text">Reset to defaults. Click <strong>Run Simulation</strong> again.</p>`;
-      detailContainer.innerHTML  = `<p class="small-text">Run a simulation to view per-game details.</p>`;
-      leaderboardContainer.innerHTML = `<p class="small-text">Run a simulation to see leaderboard standings.</p>`;
-      statusEl.textContent       = '';
-      exportBtn.disabled         = true;
-      batchSelect.innerHTML      = '<option value="">No data yet</option>';
-      if (avgProfitChart) avgProfitChart.destroy();
-      if (balanceChart)   balanceChart.destroy();
-      lastResult = null;
-      lastConfig = null;
+      resultsContainer.innerHTML='<p class="small-text">Reset to defaults.</p>';
+      detailContainer.innerHTML='<p class="small-text">Run simulation to view details.</p>';
+      leaderboardContainer.innerHTML='<p class="small-text">Run simulation to see leaderboard.</p>';
+      statusEl.textContent='';
+      exportBtn.disabled=true;
+      batchSelect.innerHTML='<option value="">No data yet</option>';
+      if(avgProfitChart) avgProfitChart.destroy();
+      if(balanceChart) balanceChart.destroy();
+      lastResult=null; lastConfig=null;
     });
 
-    exportBtn.addEventListener('click', () => {
-      if (lastResult && lastResult.summaries && lastResult.summaries.length) {
+    exportBtn.addEventListener('click',()=>{
+      if(lastResult && lastResult.summaries && lastResult.summaries.length){
         exportSummaryCSV(lastResult.summaries);
       }
     });
 
-    batchSelect.addEventListener('change', () => {
+    batchSelect.addEventListener('change',()=>{
       renderBatchDetail(batchSelect.value);
     });
 
-    detailContainer.addEventListener('click', (e) => {
-      const btn = e.target.closest('.game-link-btn');
-      if (!btn) return;
-      const gameIndex  = Number(btn.dataset.gameIndex);
-      const batchIndex = Number(batchSelect.value || 0);
-      renderGameVisual(batchIndex, gameIndex);
+    detailContainer.addEventListener('click',(e)=>{
+      const btn=e.target.closest('.game-link-btn');
+      if(!btn) return;
+      const gi=Number(btn.dataset.gameIndex);
+      const bi=Number(batchSelect.value||0);
+      renderGameVisual(bi,gi);
     });
-
-    // ---------- Tooltip logic ----------
-    (function() {
-      const tooltip = document.getElementById('configTooltip');
-      const titleEl = tooltip.querySelector('.tooltip-title');
-      const bodyEl  = tooltip.querySelector('.tooltip-body');
-      const closeEl = tooltip.querySelector('.tooltip-close');
-
-      let currentInfoBtn = null;
-
-      function hideTooltip() {
-        tooltip.classList.add('hidden');
-        currentInfoBtn = null;
-      }
-
-      function showTooltip(btn) {
-        const title = btn.getAttribute('data-title') || 'Info';
-        const info  = btn.getAttribute('data-info') || '';
-
-        titleEl.textContent = title;
-        // Handle both literal "\n" and real newline characters
-        bodyEl.innerHTML = info
-          .replace(/\\n/g, '<br/>')
-          .replace(/\n/g, '<br/>');
-
-        const rect = btn.getBoundingClientRect();
-        const scrollY = window.scrollY || document.documentElement.scrollTop;
-        const scrollX = window.scrollX || document.documentElement.scrollLeft;
-
-        let top  = rect.bottom + 8 + scrollY;
-        let left = rect.left + scrollX;
-
-        const maxLeft = scrollX + document.documentElement.clientWidth - 320;
-        if (left > maxLeft) left = maxLeft;
-
-        tooltip.style.top  = top + 'px';
-        tooltip.style.left = left + 'px';
-        tooltip.classList.remove('hidden');
-      }
-
-      document.addEventListener('click', (e) => {
-        const infoBtn = e.target.closest('.info-icon');
-        const insideTooltip = e.target.closest('#configTooltip');
-
-        if (infoBtn) {
-          e.stopPropagation();
-
-          if (currentInfoBtn === infoBtn && !tooltip.classList.contains('hidden')) {
-            hideTooltip();
-            return;
-          }
-
-          currentInfoBtn = infoBtn;
-          showTooltip(infoBtn);
-          return;
-        }
-
-        if (!insideTooltip) {
-          hideTooltip();
-        }
-      });
-
-      closeEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hideTooltip();
-      });
-    })();
   </script>
 </body>
 </html>
